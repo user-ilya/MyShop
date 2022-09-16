@@ -5,7 +5,7 @@ import 'package:shop/providers/ProductsProvider.dart';
 import '../pages/CartPage.dart';
 import '../providers/Cart.dart';
 import '../widgets/Badge.dart';
-import '../widgets/app_drawer.dart';
+import '../widgets/AppDrawer.dart';
 import '../widgets/ProductsGrid.dart';
 
 enum FilterOptions {

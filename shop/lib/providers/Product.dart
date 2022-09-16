@@ -18,15 +18,15 @@ class Product with ChangeNotifier{
     notifyListeners();
   }
 
-  Future<void> toggleFavorite() async {
+  Future<void> toggleFavorite(String authToken, String userId) async {
     dynamic oldStatus = isFavorite;
-    final url = Uri.parse('https://flutter-app-1c25c-default-rtdb.firebaseio.com/products/$id.json');
+    final url = Uri.parse('https://flutter-app-1c25c-default-rtdb.firebaseio.com/user/$userId/$id.json?auth=$authToken');
       isFavorite = !isFavorite;
       notifyListeners();
     try {
-      final response = await http.patch(url, body: json.jsonEncode({
-        'isFavorite': !isFavorite
-      }));
+      final response = await http.put(url, body: json.jsonEncode(
+        isFavorite
+      ));
       if (response.statusCode >= 400) {
         _setValueFavorite(oldStatus);
       }

@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shop/providers/orders.dart';
 
 import '../providers/Cart.dart' show Cart;
-import '../widgets/cartItem.dart' as ci;
+import '../widgets/CartItem.dart' as ci;
 
 class CartPage extends StatefulWidget {
   static const routeName = '/cart';

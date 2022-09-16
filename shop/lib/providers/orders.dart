@@ -15,6 +15,9 @@ class OrderItem {
 }
 
 class Order with ChangeNotifier {
+  Order(this.authToken, this.userId, this._orders);
+  final String? authToken;
+  final String? userId;
 
   late List<OrderItem> _orders = [];
 
@@ -23,7 +26,7 @@ class Order with ChangeNotifier {
   }
 
   Future<void> fetchAndSetOrders () async {
-    final url = Uri.parse('https://flutter-app-1c25c-default-rtdb.firebaseio.com/order.json');
+    final url = Uri.parse('https://flutter-app-1c25c-default-rtdb.firebaseio.com/order/$userId.json?auth=$authToken');
     final response = await http.get(url);
     final extractedData = json.jsonDecode(response.body) as Map<String,dynamic>;
     if (extractedData == null) {
@@ -43,7 +46,7 @@ class Order with ChangeNotifier {
   }
   
   Future<void> addOrder(List<CartItem> cardProducts, double total) {
-    final url = Uri.parse('https://flutter-app-1c25c-default-rtdb.firebaseio.com/order.json');
+    final url = Uri.parse('https://flutter-app-1c25c-default-rtdb.firebaseio.com/order/$userId.json?auth=$authToken');
     final arr = [];
     for (var i =0; i < cardProducts.length; i++) {
       final product = {

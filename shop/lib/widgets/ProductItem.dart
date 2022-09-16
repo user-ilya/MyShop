@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shop/pages/ProductDetailPage.dart';
 import 'package:shop/providers/Product.dart';
 import 'package:shop/providers/Cart.dart';
+import 'package:shop/providers/auth.dart';
 
 class ProductItem extends StatelessWidget {
   // final String id;
@@ -14,6 +15,7 @@ class ProductItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final product = Provider.of<Product>(context, listen: false);
     final cart = Provider.of<Cart>(context, listen: false);
+    final authData = Provider.of<Auth>(context, listen: false);
     final scaffold = ScaffoldMessenger.of(context);
     return ClipRRect(
       borderRadius: const BorderRadius.all(Radius.circular(10)),
@@ -32,7 +34,7 @@ class ProductItem extends StatelessWidget {
             builder: (ctx, product, child) => IconButton(
             onPressed: () async {
               try {
-                await product.toggleFavorite();
+                await product.toggleFavorite(authData.token as String, authData.userId as String);
               } catch (error) {
                 scaffold.showSnackBar(SnackBar(content: Text('Запрос не выполнен', textAlign: TextAlign.center,)));
                 print(error);

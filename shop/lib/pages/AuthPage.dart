@@ -1,20 +1,24 @@
-import 'package:flutter/material.dart';
-
 import 'dart:math';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shop/models/exceptions.dart';
+import 'package:shop/providers/auth.dart';
+
+
 
 enum AuthMode {SignUp, Login }
 
 class AuthPage extends StatelessWidget {
-  const AuthPage({ Key? key }) : super(key: key);
+
 
   static const routeName = '/auth';
 
   @override
   Widget build(BuildContext context) {
     final deviceSize = MediaQuery.of(context).size;
-    // final transformConfig = Matrix4.rotationZ(-8 * pi/180).translate(-10);
+    
     return Scaffold(
-      //resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
           Container(
@@ -31,7 +35,7 @@ class AuthPage extends StatelessWidget {
             ),
           ),
           SingleChildScrollView(
-            child: Container(
+            child: SizedBox(
               height: deviceSize.height,
               width: deviceSize.width,
               child: Column(
@@ -41,8 +45,9 @@ class AuthPage extends StatelessWidget {
                   Flexible(
                     child: Container(
                       margin: const EdgeInsets.only(bottom: 20),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                      transform: Matrix4.rotationZ(-8 * pi/180)..translate(-10),
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 34),
+                      transform: Matrix4.rotationZ(-8 * pi / 180)
+                        ..translate(-10.0),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
                         color: Colors.deepOrange.shade900,
@@ -54,7 +59,7 @@ class AuthPage extends StatelessWidget {
                           )
                         ]
                       ),
-                      child: Text('Мой магазин', style: TextStyle(
+                      child: const Text('Мой магазин', style: TextStyle(
                         color: Colors.white,
                         fontSize: 50,
                         fontFamily: 'Anton',
@@ -63,7 +68,7 @@ class AuthPage extends StatelessWidget {
                     ),
                   ),
                   Flexible(
-                    flex: deviceSize.width > 600 ? 1 : 2,
+                    flex: deviceSize.width > 600 ? 2 : 1,
                     child: AuthCard(),
                   )
                 ],
@@ -93,19 +98,55 @@ class _AuthCardState extends State<AuthCard> {
   late bool _isLoading = false;
   final _passwordController = TextEditingController();
 
-  void _submit () {
+  void _showDialogError (String message) {
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Внимание'),
+      content: Text(message),
+      actions: [
+        TextButton(
+          onPressed: () => {
+            Navigator.of(ctx).pop(),
+          }, 
+          child: const Text('Ok'),
+          ),
+      ],
+    ));
+  }
+
+  Future<void> _submit () async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    _formKey.currentState!.save();
+    _formKey.currentState?.save();
     setState(() {
       _isLoading = true;
     });
-    if (_authMode == AuthMode.Login) {
+    try {
+      if (_authMode == AuthMode.Login) {
+        await Provider.of<Auth>(context, listen: false).signIn(_authData['email'], _authData['password']);
+      } else {
+        await Provider.of<Auth>(context, listen: false).signUp(_authData['email'], _authData['password']);
+      }
+      
+    } on HttpException catch (error) {
+      var messageError = 'Ошибка авторизации';
+      if (error.toString().contains('EMAIL_EXISTS')) {
+        messageError = 'Такой адрес электронный почты уже существует!';
+      } else if (error.toString().contains('INVALID_EMAIL')) {
+        messageError = 'Вы ввели не верный адрес электронной почты';
+      } else {
 
-    } else {
-
+      //...
+      // _showDialogError(messageError);
+      }
+      _showDialogError(messageError);
     }
+    catch (error) {
+      const messageError = 'Сейчас невозможно авторизироваться в системе. Повторите попытку позднее !';
+      _showDialogError(messageError);
+      print(messageError);
+    }
+
     setState(() {
       _isLoading = false;
     });
@@ -133,7 +174,6 @@ class _AuthCardState extends State<AuthCard> {
       ),
       elevation: 8,
       child: Container(
-        height: _authMode ==AuthMode.SignUp ? 320 : 260,
         constraints: BoxConstraints(
           minHeight: _authMode == AuthMode.SignUp ? 320 : 260,
         ),
@@ -143,7 +183,7 @@ class _AuthCardState extends State<AuthCard> {
           key: _formKey,
           child: SingleChildScrollView(
             child: Column(
-              children: <Widget>[
+              children: [
                 TextFormField(
                   decoration: InputDecoration(labelText: 'Электронная почта:'),
                   keyboardType: TextInputType.emailAddress,
@@ -154,7 +194,7 @@ class _AuthCardState extends State<AuthCard> {
                     return null;
                   },
                   onSaved: (value) {
-                    _authData['e-mail'] = value!;
+                    _authData['email'] = value!;
                   },
                 ),
                 TextFormField(
@@ -164,7 +204,7 @@ class _AuthCardState extends State<AuthCard> {
                   obscureText: true,
                   validator: (value) {
                     if (value!.isEmpty || value.length < 5) {
-                      return 'Слишком легкий пароль, пароль должен содержать не менее 5 символов';
+                      return 'Пароль должен содержать не менее 5 символов';
                     }
                   },
                   onSaved: (value) {
@@ -185,7 +225,7 @@ class _AuthCardState extends State<AuthCard> {
                         }
                       } : null,
                   ),
-                const SizedBox(height: 20,),
+                const SizedBox(height: 10,),
                 if (_isLoading) 
                   const CircularProgressIndicator()
                 else
@@ -204,11 +244,11 @@ class _AuthCardState extends State<AuthCard> {
                     ),
                     )
                   ),
-                  SizedBox(height: 15,),
-                TextButton(
-                  onPressed: _switchAuthMode,
-                  child: Text('${_authMode == AuthMode.Login ? 'Регистрация' : 'Войти'}'),
-                  style: ButtonStyle(
+                  const SizedBox(height: 5,),
+                  TextButton(
+                    onPressed: _switchAuthMode,
+                    child: Text('${_authMode == AuthMode.Login ? 'Регистрация' : 'Войти'}'),
+                    style: ButtonStyle(
                     padding: MaterialStateProperty.all(const EdgeInsets.symmetric(horizontal: 30, vertical: 4),)
                   ),
 
@@ -221,4 +261,3 @@ class _AuthCardState extends State<AuthCard> {
     );
   }
 }
-
