@@ -88,7 +88,7 @@ class AuthCard extends StatefulWidget {
   State<AuthCard> createState() => _AuthCardState();
 }
 
-class _AuthCardState extends State<AuthCard> {
+class _AuthCardState extends State<AuthCard> with SingleTickerProviderStateMixin {
   final GlobalKey<FormState> _formKey = GlobalKey();
   late AuthMode _authMode = AuthMode.Login;
   final Map<String, String> _authData = {
@@ -97,6 +97,27 @@ class _AuthCardState extends State<AuthCard> {
   };
   late bool _isLoading = false;
   final _passwordController = TextEditingController();
+  late AnimationController _controller;
+  late Animation<Size> _heightAnimation;
+  late Animation<double> _opacityAnimation;
+  late Animation<Offset> _offsetAnimation;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    _heightAnimation = Tween<Size>(begin: const Size(double.infinity,260), end: const Size(double.infinity, 320)).animate(CurvedAnimation(parent: _controller, curve: Curves.fastOutSlowIn));
+    _controller.addListener(() {setState(() {});});
+    _opacityAnimation = Tween<double>(begin: 0, end:  1).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInCubic));
+    _offsetAnimation = Tween<Offset>(begin: const Offset(0, -0.5), end: const Offset(0, 0)).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticInOut));
+  }
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    _controller.dispose();
+  }
 
   void _showDialogError (String message) {
     showDialog(context: context, builder: (ctx) => AlertDialog(
@@ -157,10 +178,12 @@ class _AuthCardState extends State<AuthCard> {
       setState(() {
         _authMode = AuthMode.SignUp;
       });
+      _controller.forward();
     } else {
       setState(() {
         _authMode = AuthMode.Login;
       });
+      _controller.reverse();
     }
   }
 
@@ -175,9 +198,11 @@ class _AuthCardState extends State<AuthCard> {
       elevation: 8,
       child: Container(
         constraints: BoxConstraints(
-          minHeight: _authMode == AuthMode.SignUp ? 320 : 260,
+          //minHeight: _authMode == AuthMode.SignUp ? 320 : 260,
+          minHeight: _heightAnimation.value.height,
         ),
         width: deviceSize.width * 0.75,
+        height: _heightAnimation.value.height,
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
@@ -185,7 +210,7 @@ class _AuthCardState extends State<AuthCard> {
             child: Column(
               children: [
                 TextFormField(
-                  decoration: InputDecoration(labelText: 'Электронная почта:'),
+                  decoration: const InputDecoration(labelText: 'Электронная почта:'),
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value!.isEmpty || !value.contains('@')) {
@@ -198,7 +223,7 @@ class _AuthCardState extends State<AuthCard> {
                   },
                 ),
                 TextFormField(
-                  decoration: InputDecoration(labelText: 'Пароль:'),
+                  decoration: const InputDecoration(labelText: 'Пароль:'),
                   keyboardType: TextInputType.visiblePassword,
                   controller: _passwordController,
                   obscureText: true,
@@ -211,19 +236,31 @@ class _AuthCardState extends State<AuthCard> {
                     _authData['password'] = value!;
                   },
                 ),
-                if (_authMode == AuthMode.SignUp) 
-                  TextFormField(
-                    enabled: _authMode == AuthMode.SignUp,
-                    decoration: InputDecoration(
-                      labelText: 'Подтвердите пароль',
+                // if (_authMode == AuthMode.SignUp) 
+
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 400),
+                    constraints: BoxConstraints(minHeight: _authMode == AuthMode.SignUp ? 60 : 0, maxHeight: _authMode == AuthMode.SignUp ? 120 : 0),
+                    curve: Curves.fastOutSlowIn,
+                    child: FadeTransition(
+                      opacity: _opacityAnimation,
+                      child: SlideTransition(
+                        position: _offsetAnimation,
+                        child: TextFormField(
+                          enabled: _authMode == AuthMode.SignUp,
+                          decoration: const InputDecoration(
+                            labelText: 'Подтвердите пароль',
+                          ),
+                          obscureText: true,
+                          validator: _authMode == AuthMode.SignUp ? 
+                            (value) {
+                              if (value != _passwordController.text) {
+                                return 'Пароль не совпадает !';
+                              }
+                            } : null,
+                        ),
+                      ),
                     ),
-                    obscureText: true,
-                    validator: _authMode == AuthMode.SignUp ? 
-                      (value) {
-                        if (value != _passwordController.text) {
-                          return 'Пароль не совпадает !';
-                        }
-                      } : null,
                   ),
                 const SizedBox(height: 10,),
                 if (_isLoading) 
@@ -234,9 +271,11 @@ class _AuthCardState extends State<AuthCard> {
                     onPressed: _submit,
                     style: ButtonStyle(
                       backgroundColor: MaterialStateProperty.all(Theme.of(context).primaryColor),
-                      textStyle: MaterialStateProperty.all(TextStyle(
-                        color:  Colors.indigo,
-                      )),
+                      textStyle: MaterialStateProperty.all(
+                        const TextStyle(
+                          color:  Colors.indigo,
+                        )
+                      ),
                       padding: MaterialStateProperty.all(const EdgeInsets.symmetric(horizontal: 35, vertical: 12),),
                       shape: MaterialStateProperty.all(RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),  
@@ -247,7 +286,7 @@ class _AuthCardState extends State<AuthCard> {
                   const SizedBox(height: 5,),
                   TextButton(
                     onPressed: _switchAuthMode,
-                    child: Text('${_authMode == AuthMode.Login ? 'Регистрация' : 'Войти'}'),
+                    child: Text(_authMode == AuthMode.Login ? 'Регистрация' : 'Войти'),
                     style: ButtonStyle(
                     padding: MaterialStateProperty.all(const EdgeInsets.symmetric(horizontal: 30, vertical: 4),)
                   ),

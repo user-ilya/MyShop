@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shop/helper/custom_route.dart';
 import 'package:shop/pages/UserProductsScreen.dart';
 
 import '../pages/OrdersPage.dart';
@@ -28,7 +29,8 @@ class AppDrawer extends StatelessWidget {
             leading: const Icon(Icons.payment),
             title: const Text('Корзина'),
             onTap: () =>  {
-              Navigator.of(context).pushReplacementNamed(OrdersPage.routeName)
+              //Navigator.of(context).pushReplacementNamed(OrdersPage.routeName)
+              Navigator.of(context).pushReplacement(CustomRoute(builder: (ctx) => OrdersPage()))
             },
           ),
            ListTile(
